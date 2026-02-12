@@ -18,10 +18,10 @@ const AppContent = () => {
         <Route path="/store" element={<Navigate to="/" replace />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         
-        {/* 🔐 Authentication */}
+       
         <Route path="/login" element={<LoginPage />} />
         
-        {/* 🔒 Protected routes - require login */}
+        
         <Route path="/client" element={
           <ProtectedRoute role="client">
             <ClientDashboard />
@@ -33,7 +33,7 @@ const AppContent = () => {
           </ProtectedRoute>
         } />
         
-       
+      
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ToastContainer 

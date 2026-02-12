@@ -10,17 +10,29 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      if (predefinedUsers[email] && predefinedUsers[email].password === password) {
+      const normalizedEmail = email.toLowerCase().trim()
+      const user = predefinedUsers[normalizedEmail]
+      
+      if (user && user.password === password) {
         const userData = {
-          email,
-          role: predefinedUsers[email].role,
-          name: predefinedUsers[email].name,
-          id: `user-${Date.now()}`
+          email: normalizedEmail,
+          role: user.role,
+          name: user.name,
+          id: `user-${Date.now()}`,
+          isAuthenticated: true
         }
+        
         localStorage.setItem('user', JSON.stringify(userData))
-        toast.success(`✨ Welcome back, ${userData.name}!`)
+        
+        // Show different welcome message based on role
+        if (user.role === 'admin') {
+          toast.success('👑 Welcome back, Admin!')
+        } else {
+          toast.success(`✨ Welcome back, ${user.name}!`)
+        }
+        
         return userData
       } else {
         toast.error('❌ Invalid email or password')
@@ -48,10 +60,13 @@ export const checkAuth = createAsyncThunk(
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
       try {
-        return JSON.parse(storedUser)
+        const userData = JSON.parse(storedUser)
+        // Ensure role is preserved
+        if (userData.role) {
+          return { ...userData, isAuthenticated: true }
+        }
       } catch (error) {
         localStorage.removeItem('user')
-        return null
       }
     }
     return null
@@ -73,6 +88,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true
         state.error = null
@@ -82,19 +98,26 @@ const authSlice = createSlice({
         state.user = action.payload
         state.isAuthenticated = true
         state.error = null
+        console.log('Redux state updated - User role:', action.payload.role) // Debug log
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
         state.isAuthenticated = false
+        state.user = null
       })
+      // Logout
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null
         state.isAuthenticated = false
       })
+      // Check Auth
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.user = action.payload
         state.isAuthenticated = !!action.payload
+        if (action.payload) {
+          console.log('Auth checked - User role:', action.payload.role) // Debug log
+        }
       })
   }
 })

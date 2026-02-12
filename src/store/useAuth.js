@@ -31,10 +31,32 @@ export const useAuth = () => {
 
   const login = async (email, password) => {
     const result = await dispatch(loginUser({ email, password }))
+    
     if (loginUser.fulfilled.match(result)) {
-      const role = result.payload.role
-      navigate(role === 'admin' ? '/admin' : '/client')
-      return role
+      const userData = result.payload
+      console.log('Login successful:', userData) // Debug log
+      
+      // Check for pending cart item
+      const pendingCart = localStorage.getItem('pendingCartItem')
+      
+      if (pendingCart) {
+        localStorage.removeItem('pendingCartItem')
+        navigate('/')
+        // Refresh to trigger pending cart action
+        setTimeout(() => window.location.reload(), 100)
+        return userData.role
+      }
+      
+      // ✅ FIXED: Proper role-based redirect
+      if (userData.role === 'admin') {
+        console.log('Redirecting to admin dashboard')
+        navigate('/admin')
+      } else {
+        console.log('Redirecting to client dashboard')
+        navigate('/client')
+      }
+      
+      return userData.role
     }
     return null
   }
@@ -70,6 +92,21 @@ export const useCart = () => {
   const discountAmount = (subtotal * discount) / 100
   const total = subtotal - discountAmount
 
+  // ✅ Check for pending cart item after login
+  useEffect(() => {
+    const pendingCart = sessionStorage.getItem('pendingCartAfterLogin')
+    if (pendingCart) {
+      try {
+        const { product } = JSON.parse(pendingCart)
+        dispatch(addToCart({ product, quantity: 1 }))
+        sessionStorage.removeItem('pendingCartAfterLogin')
+        dispatch(openCart())
+      } catch (error) {
+        console.error('Error processing pending cart:', error)
+      }
+    }
+  }, [dispatch])
+
   return {
     items,
     count,
@@ -84,7 +121,7 @@ export const useCart = () => {
     openCart: () => dispatch(openCart()),
     closeCart: () => dispatch(closeCart()),
     toggleCart: () => dispatch(toggleCart()),
-    setCartOpen: (open) => open ? dispatch(openCart()) : dispatch(closeCart()), // ✅ Added
+    setCartOpen: (open) => open ? dispatch(openCart()) : dispatch(closeCart()),
     
     addToCart: (product, quantity = 1) => 
       dispatch(addToCart({ product, quantity })),
@@ -107,15 +144,16 @@ export const useCart = () => {
     getItemQuantity: (productId) => 
       items.find(item => item.id === productId)?.quantity || 0,
     
-    cart: items,  
-    cartCount: count, 
-    cartTotal: total,  
-    cartOpen: isOpen,  
-    setCartOpen: (open) => open ? dispatch(openCart()) : dispatch(closeCart()) // ✅ Alias
+    // Aliases for backward compatibility
+    cart: items,
+    cartCount: count,
+    cartTotal: total,
+    cartOpen: isOpen,
+    setCartOpen: (open) => open ? dispatch(openCart()) : dispatch(closeCart())
   }
 }
 
-
+// ============ WISHLIST HOOK ============
 export const useWishlist = () => {
   const dispatch = useDispatch()
   
@@ -123,25 +161,43 @@ export const useWishlist = () => {
   const isOpen = useSelector(state => state.wishlist?.isOpen || false)
   const count = items.length
 
+  // ✅ Check for pending wishlist item after login
+  useEffect(() => {
+    const pendingWishlist = sessionStorage.getItem('pendingWishlistAfterLogin')
+    if (pendingWishlist) {
+      try {
+        const { product } = JSON.parse(pendingWishlist)
+        dispatch(toggleWishlistItem(product))
+        sessionStorage.removeItem('pendingWishlistAfterLogin')
+        dispatch(openWishlist())
+      } catch (error) {
+        console.error('Error processing pending wishlist:', error)
+      }
+    }
+  }, [dispatch])
+
   return {
     items,
     count,
     isOpen,
-    wishlist: items, 
-    wishlistCount: count, 
-    wishlistOpen: isOpen, 
     
     openWishlist: () => dispatch(openWishlist()),
     closeWishlist: () => dispatch(closeWishlist()),
     toggleWishlist: () => dispatch(toggleWishlist()),
-    setWishlistOpen: (open) => open ? dispatch(openWishlist()) : dispatch(closeWishlist()), // ✅ Added
+    setWishlistOpen: (open) => open ? dispatch(openWishlist()) : dispatch(closeWishlist()),
     
     toggleItem: (product) => dispatch(toggleWishlistItem(product)),
-    toggleWishlistItem: (product) => dispatch(toggleWishlistItem(product)), // ✅ Alias
+    toggleWishlistItem: (product) => dispatch(toggleWishlistItem(product)),
     removeItem: (productId) => dispatch(removeFromWishlist(productId)),
-    removeFromWishlist: (productId) => dispatch(removeFromWishlist(productId)), // ✅ Alias
+    removeFromWishlist: (productId) => dispatch(removeFromWishlist(productId)),
     clearWishlist: () => dispatch(clearWishlist()),
     
-    isInWishlist: (productId) => items.some(item => item.id === productId)
+    isInWishlist: (productId) => items.some(item => item.id === productId),
+    
+    // Aliases for backward compatibility
+    wishlist: items,
+    wishlistCount: count,
+    wishlistOpen: isOpen,
+    setWishlistOpen: (open) => open ? dispatch(openWishlist()) : dispatch(closeWishlist())
   }
 }

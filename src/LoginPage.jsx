@@ -10,12 +10,21 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   
-  const { login, isLoading, error, clearError } = useAuth()
+  const { login, isLoading, error, clearError, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     clearError()
-  }, [])
+    
+    
+    if (isAuthenticated && user) {
+      if (user.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/client')
+      }
+    }
+  }, [isAuthenticated, user, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -23,23 +32,11 @@ const LoginPage = () => {
     
     const role = await login(email, password)
     
-    if (role) {
-     
-      const pendingCart = localStorage.getItem('pendingCartItem')
-      
-      if (pendingCart) {
-     
-        localStorage.removeItem('pendingCartItem')
-       
-        navigate('/')
-       
-        setTimeout(() => {
-          window.location.reload()
-        }, 100)
-      } else {
-        
-        navigate('/')
-      }
+    // Login function already handles navigation
+    if (role === 'admin') {
+      console.log('Admin login successful, redirecting...')
+    } else if (role === 'client') {
+      console.log('Client login successful, redirecting...')
     }
   }
 
@@ -187,38 +184,6 @@ const LoginPage = () => {
               </div>
             </div>
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="floating-elements"
-        >
-          {['🛍️', '💳', '🚚', '⭐', '🎁'].map((emoji, i) => (
-            <motion.div
-              key={i}
-              className="floating-element"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${i * 0.5}s`
-              }}
-              animate={{
-                y: [0, -30, 0],
-                rotate: [0, 360],
-                scale: [1, 1.2, 1]
-              }}
-              transition={{
-                duration: 8,
-                delay: i * 0.2,
-                repeat: Infinity,
-                repeatType: 'reverse'
-              }}
-            >
-              {emoji}
-            </motion.div>
-          ))}
         </motion.div>
       </div>
     </div>
