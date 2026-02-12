@@ -162,7 +162,6 @@ const AdminDashboard = () => {
     }
   }
 
-  // ✅ NEW: Delete order function
   const handleDeleteOrder = async (orderId) => {
     if (!window.confirm('Are you sure you want to delete this order?')) return
     

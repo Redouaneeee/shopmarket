@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  ShoppingBag, 
-  User, 
-  LogOut, 
-  ShoppingCart, 
-  Heart, 
-  Menu, 
+import {
+  ShoppingBag,
+  User,
+  LogOut,
+  ShoppingCart,
+  Heart,
+  Menu,
   X,
   Home,
   Settings,
@@ -15,16 +15,16 @@ import {
 } from 'lucide-react'
 import './Navbar.css'
 
-const Navbar = ({ 
-  userRole, 
-  onLogout, 
-  cartCount = 0, 
-  wishlistCount = 0, 
+const Navbar = ({
+  userRole,
+  onLogout,
+  cartCount = 0,
+  wishlistCount = 0,
   onCartClick,
   onWishlistClick,
   onHomeClick,
   showBackButton,
-  onBack 
+  onBack
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const navigate = useNavigate()
@@ -46,7 +46,7 @@ const Navbar = ({
   }
 
   return (
-    <motion.nav 
+    <motion.nav
       className="navbar"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -64,7 +64,7 @@ const Navbar = ({
               ← Back
             </motion.button>
           )}
-          
+
           <Link to={userRole === 'admin' ? '/admin' : '/client'} className="logo">
             <ShoppingBag className="logo-icon" />
             <span className="logo-text">ShopMarket</span>
@@ -81,8 +81,8 @@ const Navbar = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <button 
-                onClick={item.onClick} 
+              <button
+                onClick={item.onClick}
                 className="nav-link"
               >
                 <item.icon size={20} />
@@ -116,7 +116,7 @@ const Navbar = ({
         </div>
 
         {/* Mobile Menu Button */}
-        <button 
+        <button
           className="mobile-menu-btn"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="Toggle menu"
@@ -151,8 +151,8 @@ const Navbar = ({
                 )}
               </button>
             ))}
-            <button 
-              onClick={handleLogout} 
+            <button
+              onClick={handleLogout}
               className="mobile-nav-link logout"
             >
               <LogOut size={20} />
