@@ -12,7 +12,8 @@ import {
   Home,
   Settings,
   Package,
-  LogIn
+  LogIn,
+  LayoutDashboard
 } from 'lucide-react'
 import './Navbar.css'
 
@@ -27,26 +28,26 @@ const Navbar = ({
   onHomeClick,
   showBackButton,
   onBack,
-  isPublicStore
+  isAdmin = false
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const navigate = useNavigate()
 
-  // Menu items for authenticated users
-  const authMenuItems = userRole === 'admin' ? [
-    { icon: Home, label: 'Dashboard', onClick: () => navigate('/admin') },
+  
+  const authMenuItems = userRole === 'admin' || isAdmin ? [
+    { icon: LayoutDashboard, label: 'Dashboard', onClick: () => navigate('/admin') },
     { icon: Package, label: 'Products', onClick: () => navigate('/admin') },
     { icon: ShoppingCart, label: 'Orders', onClick: () => navigate('/admin') },
     { icon: Settings, label: 'Settings', onClick: () => navigate('/admin') }
   ] : [
-    { icon: Home, label: 'Home', onClick: onHomeClick || (() => navigate('/client')), badge: null },
+    { icon: Home, label: 'Home', onClick: onHomeClick || (() => navigate('/')), badge: null },
     { icon: Heart, label: 'Wishlist', onClick: onWishlistClick, badge: wishlistCount },
     { icon: ShoppingCart, label: 'Cart', onClick: onCartClick, badge: cartCount }
   ]
 
-  // Menu items for guests
+  
   const guestMenuItems = [
-    { icon: Home, label: 'Home', onClick: onHomeClick || (() => navigate('/store')), badge: null },
+    { icon: Home, label: 'Home', onClick: onHomeClick || (() => navigate('/')), badge: null },
     { icon: LogIn, label: 'Sign In', onClick: () => navigate('/login'), badge: null },
     { icon: ShoppingCart, label: 'Cart', onClick: onCartClick, badge: cartCount }
   ]
@@ -79,7 +80,7 @@ const Navbar = ({
           )}
 
           <Link 
-            to={isAuthenticated && userRole === 'admin' ? '/admin' : isAuthenticated ? '/client' : '/store'} 
+            to={isAuthenticated && userRole === 'admin' ? '/admin' : isAuthenticated ? '/' : '/'} 
             className="logo"
           >
             <ShoppingBag className="logo-icon" />
@@ -118,7 +119,7 @@ const Navbar = ({
                 <div className="user-info">
                   <User size={18} />
                   <span className="user-role">
-                    {userRole === 'admin' ? 'Admin' : 'Client'}
+                    {userRole === 'admin' || isAdmin ? 'Admin' : 'Client'}
                   </span>
                 </div>
                 <motion.button

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { useAuth, useCart, useWishlist } from './store/useAuth'
+import { useAuth, useCart, useWishlist } from './store/useAuth' // ✅ Import useAuth
 import { productAPI } from './api'
 import Navbar from './Navbar'
 import ProductCard from './ProductCard'
@@ -64,8 +64,8 @@ const ClientDashboard = () => {
   const [itemsToShow, setItemsToShow] = useState(12)
   const [activeFilters, setActiveFilters] = useState([])
   
-  // Auth state - handle gracefully when not logged in
-  const { isAuthenticated, login, logout } = useAuth()
+  // ✅ FIXED: Get user from useAuth hook
+  const { user, isAuthenticated, logout } = useAuth()
   const { 
     cartCount, 
     setCartOpen, 
@@ -77,7 +77,7 @@ const ClientDashboard = () => {
     toggleWishlistItem 
   } = useWishlist()
 
-  // Initial fetch - NO AUTH REQUIRED
+  // Initial fetch
   useEffect(() => {
     fetchProducts()
   }, [])
@@ -125,18 +125,16 @@ const ClientDashboard = () => {
     sortBy
   ])
 
-  // Fetch all products from API - PUBLIC
+  // Fetch all products from API
   const fetchProducts = async () => {
     try {
       setLoading(true)
       const response = await productAPI.getAll()
       setProducts(response.data)
       
-      // Extract unique categories
       const uniqueCategories = ['all', ...new Set(response.data.map(p => p.category.name))]
       setCategories(uniqueCategories)
       
-      // Extract unique brands
       const uniqueBrands = ['all', ...new Set(
         response.data
           .map(p => p.title.split(' ')[0])
@@ -145,7 +143,6 @@ const ClientDashboard = () => {
       )]
       setBrands(uniqueBrands)
       
-      // Set featured products
       const shuffled = [...response.data].sort(() => 0.5 - Math.random())
       setFeaturedProducts(shuffled.slice(0, 4))
     } catch (error) {
@@ -156,7 +153,6 @@ const ClientDashboard = () => {
     }
   }
 
-  // Filter and sort products - PUBLIC
   const filterAndSortProducts = () => {
     let filtered = [...products]
     
@@ -226,41 +222,32 @@ const ClientDashboard = () => {
     setItemsToShow(12)
   }
 
-  // 🛒 Handle add to cart - ONLY require login when trying to buy
   const handleAddToCart = (product) => {
     if (!isAuthenticated) {
-      // Save the product they wanted to buy
       localStorage.setItem('pendingCartItem', JSON.stringify({
         product,
         quantity: 1
       }))
-      
       toast.info('Please login to add items to cart')
       navigate('/login')
       return
     }
-    
-    // Authenticated - add to cart normally
     addToCart({ ...product, quantity: 1 })
     toast.success(`🛒 Added ${product.title} to cart!`)
   }
 
-  // 💖 Handle wishlist - require login to save favorites
   const handleWishlistToggle = (product) => {
     if (!isAuthenticated) {
       localStorage.setItem('pendingWishlistItem', JSON.stringify({
         product
       }))
-      
       toast.info('Please login to save items to wishlist')
       navigate('/login')
       return
     }
-    
     toggleWishlistItem(product)
   }
 
-  // 🛍️ Handle view cart - require login to see cart
   const handleViewCart = () => {
     if (!isAuthenticated) {
       toast.info('Please login to view your cart')
@@ -270,7 +257,6 @@ const ClientDashboard = () => {
     setCartOpen(true)
   }
 
-  // 💝 Handle view wishlist - require login to see wishlist
   const handleViewWishlist = () => {
     if (!isAuthenticated) {
       toast.info('Please login to view your wishlist')
@@ -280,7 +266,6 @@ const ClientDashboard = () => {
     setWishlistOpen(true)
   }
 
-  // 🏠 Handle home click - PUBLIC, no login required
   const handleHomeClick = () => {
     setSearchTerm('')
     setSelectedCategory('all')
@@ -291,10 +276,8 @@ const ClientDashboard = () => {
     setOnSaleOnly(false)
     setSortBy('default')
     setShowFilters(false)
-    // Stay on home page, don't navigate
   }
 
-  // Handle View All button click
   const handleViewAll = () => {
     handleHomeClick()
     document.querySelector('.products-section')?.scrollIntoView({ 
@@ -302,12 +285,10 @@ const ClientDashboard = () => {
     })
   }
 
-  // Handle Load More button click
   const handleLoadMore = () => {
     setItemsToShow(prev => prev + 12)
   }
 
-  // Clear all filters
   const clearFilters = () => {
     setSearchTerm('')
     setSelectedCategory('all')
@@ -320,7 +301,6 @@ const ClientDashboard = () => {
     toast.info('All filters cleared')
   }
 
-  // Remove specific filter
   const removeFilter = (filter) => {
     switch(filter) {
       case 'search':
@@ -352,13 +332,11 @@ const ClientDashboard = () => {
     }
   }
 
-  // Get count of products in a category
   const getCategoryCount = (category) => {
     if (category === 'all') return products.length
     return products.filter(p => p.category.name === category).length
   }
 
-  // Loading state
   if (loading) {
     return (
       <div className="client-loading">
@@ -387,19 +365,20 @@ const ClientDashboard = () => {
     <div className="client-dashboard">
       <AnimatedBackground />
       
-      {/* Navigation Bar - PUBLIC */}
       <Navbar
         isAuthenticated={isAuthenticated}
+        userRole={isAuthenticated ? user?.role : 'guest'}
         onLogout={logout}
         cartCount={cartCount}
         wishlistCount={wishlist?.length || 0}
         onCartClick={handleViewCart}
         onWishlistClick={handleViewWishlist}
         onHomeClick={handleHomeClick}
+        isAdmin={false}
       />
 
       <div className="dashboard-content">
-        {/* Hero Section - PUBLIC */}
+        {/* Hero Section */}
         <section className="hero-section">
           <motion.div
             className="hero-content"
@@ -442,7 +421,6 @@ const ClientDashboard = () => {
               </div>
             </div>
 
-            {/* Call to action for guests */}
             {!isAuthenticated && (
               <motion.button
                 className="login-cta-btn"
@@ -461,7 +439,7 @@ const ClientDashboard = () => {
           </motion.div>
         </section>
 
-        {/* Featured Products Section - PUBLIC */}
+        {/* Featured Products Section */}
         <section className="featured-section">
           <div className="section-header">
             <div className="section-title-wrapper">
@@ -566,7 +544,7 @@ const ClientDashboard = () => {
           </div>
         )}
 
-        {/* Search and Filters Section - PUBLIC */}
+        {/* Search and Filters Section */}
         <section className="filters-section">
           <div className="filters-header">
             <div className="search-wrapper">
@@ -658,7 +636,6 @@ const ClientDashboard = () => {
             </div>
           </div>
 
-          {/* Filters Panel - PUBLIC */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -844,7 +821,6 @@ const ClientDashboard = () => {
           </AnimatePresence>
         </section>
 
-        {/* Products Grid Section - PUBLIC */}
         <section className="products-section">
           <div className="products-header">
             <div className="results-info">
@@ -944,7 +920,6 @@ const ClientDashboard = () => {
           )}
         </section>
 
-        {/* Benefits Section - PUBLIC */}
         <section className="benefits-section">
           <h2 className="benefits-title">Why Shop With Us?</h2>
           <div className="benefits-grid">
@@ -1007,7 +982,6 @@ const ClientDashboard = () => {
         </section>
       </div>
 
-      {/* Mobile Filters Modal - PUBLIC */}
       <AnimatePresence>
         {showMobileFilters && (
           <motion.div 
@@ -1165,10 +1139,7 @@ const ClientDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* Cart Sidebar - Only show if authenticated */}
       {isAuthenticated && <CartSidebar />}
-      
-      {/* Wishlist Sidebar - Only show if authenticated */}
       {isAuthenticated && <WishlistSidebar />}
     </div>
   )

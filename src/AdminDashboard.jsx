@@ -5,11 +5,12 @@ import { productAPI, orderAPI } from './api'
 import Navbar from './Navbar'
 import AnimatedBackground from './AnimatedBackground'
 import ProductForm from './ProductForm'
+import StatsCards from './StatsCards'
+import OrdersTable from './OrdersTable'
 import { 
   Package, 
   ShoppingCart, 
   DollarSign,
-  TrendingUp,
   Plus,
   Edit,
   Trash2,
@@ -17,8 +18,6 @@ import {
   XCircle,
   Clock,
   Search,
-  Filter,
-  Download,
   RefreshCw,
   Users,
   AlertCircle,
@@ -41,21 +40,23 @@ const AdminDashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
   
-  const { user, logout } = useAuth() 
+  const { user, logout, isAuthenticated } = useAuth()
 
   useEffect(() => {
     fetchData()
     
-    // Listen for order updates
     const handleOrderUpdate = () => {
       fetchOrders()
     }
     
     window.addEventListener('orderPlaced', handleOrderUpdate)
     window.addEventListener('orderUpdated', handleOrderUpdate)
+    window.addEventListener('orderDeleted', handleOrderUpdate)
+    
     return () => {
       window.removeEventListener('orderPlaced', handleOrderUpdate)
       window.removeEventListener('orderUpdated', handleOrderUpdate)
+      window.removeEventListener('orderDeleted', handleOrderUpdate)
     }
   }, [])
 
@@ -151,7 +152,7 @@ const AdminDashboard = () => {
     try {
       await orderAPI.updateOrderStatus(orderId, newStatus)
       const updatedOrders = orders.map(order =>
-        order.id === orderId ? { ...order, status: newStatus } : order
+        order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date().toISOString() } : order
       )
       setOrders(updatedOrders)
       setFilteredOrders(updatedOrders)
@@ -229,12 +230,16 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <AnimatedBackground />
       
+      {/* ✅ FIXED: Navbar with proper admin props */}
       <Navbar 
-        userRole={user?.role} 
-        onLogout={logout} 
+        userRole="admin"
+        isAuthenticated={true}
+        onLogout={logout}
+        isAdmin={true}
       />
 
       <div className="admin-content">
+        {/* Header with working Add Product button */}
         <div className="admin-header">
           <div className="header-left">
             <h1>Admin Dashboard</h1>
@@ -271,79 +276,8 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="stats-grid">
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="stat-icon products">
-              <Package />
-            </div>
-            <div className="stat-info">
-              <h3>Total Products</h3>
-              <p className="stat-number">{stats.totalProducts}</p>
-              <span className="stat-trend">
-                Available in stock
-              </span>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="stat-icon orders">
-              <ShoppingCart />
-            </div>
-            <div className="stat-info">
-              <h3>Total Orders</h3>
-              <p className="stat-number">{stats.totalOrders}</p>
-              <span className="stat-trend">
-                {stats.pendingOrders} pending
-              </span>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="stat-icon pending">
-              <Clock />
-            </div>
-            <div className="stat-info">
-              <h3>Pending Orders</h3>
-              <p className="stat-number">{stats.pendingOrders}</p>
-              <span className="stat-trend">
-                Need attention
-              </span>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            className="stat-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <div className="stat-icon revenue">
-              <DollarSign />
-            </div>
-            <div className="stat-info">
-              <h3>Total Revenue</h3>
-              <p className="stat-number">${stats.totalRevenue.toFixed(2)}</p>
-              <span className="stat-trend">
-                From {stats.completedOrders} completed orders
-              </span>
-            </div>
-          </motion.div>
-        </div>
+        {/* Stats Cards */}
+        <StatsCards stats={stats} />
 
         {/* Tabs */}
         <div className="admin-tabs">
@@ -365,6 +299,7 @@ const AdminDashboard = () => {
           </button>
         </div>
 
+        {/* Products Tab */}
         {activeTab === 'products' && (
           <motion.div 
             className="admin-section"
@@ -389,7 +324,7 @@ const AdminDashboard = () => {
             </div>
 
             <div className="table-responsive">
-              <table className="admin-table">
+              <table className="admin-table products-table">
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -485,6 +420,7 @@ const AdminDashboard = () => {
           </motion.div>
         )}
 
+        {/* Orders Tab */}
         {activeTab === 'orders' && (
           <motion.div 
             className="admin-section"
@@ -519,6 +455,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Orders Stats Mini */}
             <div className="orders-stats-mini">
               <div className="mini-stat">
                 <span className="mini-stat-label">Pending</span>
@@ -676,6 +613,7 @@ const AdminDashboard = () => {
         )}
       </div>
 
+      {/* Product Form Modal */}
       <AnimatePresence>
         {(showProductModal || editingProduct) && (
           <ProductForm
@@ -692,6 +630,7 @@ const AdminDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* Order Details Modal */}
       <AnimatePresence>
         {showOrderDetails && selectedOrder && (
           <motion.div 
