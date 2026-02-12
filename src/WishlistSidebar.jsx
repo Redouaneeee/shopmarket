@@ -1,19 +1,18 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useWishlist } from './WishlistContext'
-import { useCart } from './CartContext'
+import { useWishlist, useCart } from './store/useAuth' 
 import { X, Heart, ShoppingCart, Trash2 } from 'lucide-react'
 import { toast } from 'react-toastify'
 import './WishlistSidebar.css'
 
 const WishlistSidebar = () => {
   const { 
-    wishlist, 
-    wishlistOpen, 
-    setWishlistOpen, 
-    toggleWishlist,
+    items,
+    isOpen,
+    closeWishlist,
+    toggleItem, 
     clearWishlist,
-    wishlistCount 
+    count
   } = useWishlist()
   
   const { addToCart } = useCart()
@@ -24,19 +23,19 @@ const WishlistSidebar = () => {
   }
 
   const handleRemoveFromWishlist = (product) => {
-    toggleWishlist(product)
+    toggleItem(product)
   }
 
   return (
     <AnimatePresence>
-      {wishlistOpen && (
+      {isOpen && (
         <>
           <motion.div
             className="wishlist-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setWishlistOpen(false)}
+            onClick={closeWishlist}
           />
           
           <motion.div
@@ -48,26 +47,26 @@ const WishlistSidebar = () => {
           >
             <div className="wishlist-header">
               <div className="wishlist-title">
-                <Heart size={24} fill={wishlist.length > 0 ? "currentColor" : "none"} />
+                <Heart size={24} fill={items.length > 0 ? "currentColor" : "none"} />
                 <h2>My Wishlist</h2>
-                <span className="wishlist-count">{wishlist.length}</span>
+                <span className="wishlist-count">{items.length}</span>
               </div>
               <button 
                 className="close-btn"
-                onClick={() => setWishlistOpen(false)}
+                onClick={closeWishlist}
               >
                 <X size={20} />
               </button>
             </div>
 
-            {wishlist.length === 0 ? (
+            {items.length === 0 ? (
               <div className="empty-wishlist">
                 <Heart size={64} className="empty-wishlist-icon" />
                 <h3>Your wishlist is empty</h3>
                 <p>Save your favorite items here!</p>
                 <button 
                   className="continue-shopping"
-                  onClick={() => setWishlistOpen(false)}
+                  onClick={closeWishlist}
                 >
                   Continue Shopping
                 </button>
@@ -75,7 +74,7 @@ const WishlistSidebar = () => {
             ) : (
               <>
                 <div className="wishlist-items">
-                  {wishlist.map((item) => (
+                  {items.map((item) => (
                     <motion.div
                       key={item.id}
                       className="wishlist-item"
@@ -122,12 +121,12 @@ const WishlistSidebar = () => {
                   <div className="wishlist-summary">
                     <div className="summary-row">
                       <span>Total Items</span>
-                      <span className="total-items">{wishlist.length}</span>
+                      <span className="total-items">{items.length}</span>
                     </div>
                     <div className="summary-row total">
                       <span>Total Value</span>
                       <span className="total-value">
-                        ${wishlist.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                        ${items.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -140,7 +139,7 @@ const WishlistSidebar = () => {
                       Clear Wishlist
                     </button>
                     <button 
-                      onClick={() => setWishlistOpen(false)}
+                      onClick={closeWishlist}
                       className="continue-shopping-btn"
                     >
                       Continue Shopping

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from './AuthContext'
+import { useAuth } from './store/useAuth'
 import { productAPI, orderAPI } from './api'
 import Navbar from './Navbar'
 import AnimatedBackground from './AnimatedBackground'
@@ -41,7 +41,7 @@ const AdminDashboard = () => {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
   
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth() 
 
   useEffect(() => {
     fetchData()
@@ -229,14 +229,12 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <AnimatedBackground />
       
-      {/* ✅ FIXED: Navbar with proper user prop */}
       <Navbar 
         userRole={user?.role} 
         onLogout={logout} 
       />
 
       <div className="admin-content">
-        {/* Header with working Add Product button */}
         <div className="admin-header">
           <div className="header-left">
             <h1>Admin Dashboard</h1>
@@ -273,7 +271,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="stats-grid">
           <motion.div 
             className="stat-card"
@@ -368,7 +365,6 @@ const AdminDashboard = () => {
           </button>
         </div>
 
-        {/* Products Tab */}
         {activeTab === 'products' && (
           <motion.div 
             className="admin-section"
@@ -489,7 +485,6 @@ const AdminDashboard = () => {
           </motion.div>
         )}
 
-        {/* Orders Tab - ENHANCED with item details and delete button */}
         {activeTab === 'orders' && (
           <motion.div 
             className="admin-section"
@@ -524,7 +519,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Orders Stats Mini */}
             <div className="orders-stats-mini">
               <div className="mini-stat">
                 <span className="mini-stat-label">Pending</span>
@@ -598,7 +592,6 @@ const AdminDashboard = () => {
                             </button>
                           </div>
                           
-                          {/* ✅ NEW: Product thumbnails preview */}
                           <div className="order-items-preview">
                             {order.items?.slice(0, 3).map((item, idx) => (
                               <img 
@@ -646,7 +639,6 @@ const AdminDashboard = () => {
                               <option value="cancelled">❌ Cancelled</option>
                             </select>
                             
-                            {/* ✅ NEW: Delete order button */}
                             <motion.button 
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
@@ -684,7 +676,6 @@ const AdminDashboard = () => {
         )}
       </div>
 
-      {/* Product Form Modal */}
       <AnimatePresence>
         {(showProductModal || editingProduct) && (
           <ProductForm
@@ -701,7 +692,6 @@ const AdminDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* Order Details Modal - ENHANCED with product images */}
       <AnimatePresence>
         {showOrderDetails && selectedOrder && (
           <motion.div 

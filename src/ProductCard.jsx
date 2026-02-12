@@ -1,27 +1,28 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { useCart } from './CartContext'
-import { useWishlist } from './WishlistContext'
-import { ShoppingCart, Heart, Star, Eye } from 'lucide-react'
+import { ShoppingCart, Heart, Star, Eye, LogIn } from 'lucide-react'
 import './ProductCard.css'
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ 
+  product, 
+  onAddToCart, 
+  onWishlistToggle, 
+  isAuthenticated 
+}) => {
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-  const { addToCart } = useCart()
-  const { toggleWishlist, isInWishlist } = useWishlist()
 
   const handleAddToCart = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    addToCart({ ...product, quantity: 1 })
+    onAddToCart(product)
   }
 
   const handleWishlistToggle = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    toggleWishlist(product)
+    onWishlistToggle(product)
   }
 
   return (
@@ -61,9 +62,14 @@ const ProductCard = ({ product }) => {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleWishlistToggle}
-                className={`overlay-btn wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
+                className="overlay-btn wishlist-btn"
+                title={isAuthenticated ? "Add to wishlist" : "Login to add to wishlist"}
               >
-                <Heart size={20} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
+                {isAuthenticated ? (
+                  <Heart size={20} />
+                ) : (
+                  <LogIn size={20} />
+                )}
               </motion.button>
               
               <Link to={`/product/${product.id}`}>
@@ -116,7 +122,7 @@ const ProductCard = ({ product }) => {
             className="add-to-cart-btn"
           >
             <ShoppingCart size={18} />
-            Add to Cart
+            {isAuthenticated ? 'Add to Cart' : 'Login to Buy'}
           </motion.button>
         </div>
       </Link>

@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { productAPI } from './api'
-import { useCart } from './CartContext'
-import { useWishlist } from './WishlistContext'
-import { useAuth } from './AuthContext'
+import { useCart, useWishlist, useAuth } from './store/useAuth' 
 import Navbar from './Navbar'
 import AnimatedBackground from './AnimatedBackground'
 import { 
@@ -20,7 +18,7 @@ import {
   Package
 } from 'lucide-react'
 import { toast } from 'react-toastify'
-import './ProductDetails.css' 
+import './ProductDetails.css'
 
 const ProductDetails = () => {
   const { id } = useParams()
@@ -32,7 +30,7 @@ const ProductDetails = () => {
   const [relatedProducts, setRelatedProducts] = useState([])
   
   const { addToCart } = useCart()
-  const { toggleWishlist, isInWishlist } = useWishlist()
+  const { toggleItem, isInWishlist } = useWishlist() // ✅ FIXED
   const { user, logout } = useAuth()
 
   useEffect(() => {
@@ -45,7 +43,6 @@ const ProductDetails = () => {
       const response = await productAPI.getById(id)
       setProduct(response.data)
       
-      // Fetch related products
       const allProducts = await productAPI.getAll()
       const related = allProducts.data
         .filter(p => p.category.id === response.data.category.id && p.id !== response.data.id)
@@ -91,6 +88,10 @@ const ProductDetails = () => {
     }
   }
 
+  const handleWishlistToggle = () => {
+    toggleItem(product) // ✅ FIXED
+  }
+
   if (loading) {
     return (
       <div className="product-details-loading">
@@ -126,7 +127,6 @@ const ProductDetails = () => {
       />
 
       <div className="product-details-container">
-        {/* Breadcrumb */}
         <div className="breadcrumb">
           <button onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/client')}>
             <ArrowLeft size={16} />
@@ -138,9 +138,7 @@ const ProductDetails = () => {
           <span className="breadcrumb-current">{product.title}</span>
         </div>
 
-        {/* Main Content */}
         <div className="product-main-content">
-          {/* Image Gallery */}
           <div className="product-gallery">
             <div className="main-image-wrapper">
               <motion.img
@@ -192,7 +190,6 @@ const ProductDetails = () => {
             )}
           </div>
 
-          {/* Product Info */}
           <div className="product-info-wrapper">
             <div className="product-header">
               <span className="product-category-badge">
@@ -285,7 +282,7 @@ const ProductDetails = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => toggleWishlist(product)}
+                  onClick={handleWishlistToggle}
                   className={`wishlist-button-large ${isInWishlist(product.id) ? 'active' : ''}`}
                 >
                   <Heart 
@@ -296,7 +293,6 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            {/* Shipping Info */}
             <div className="shipping-info">
               <div className="info-item">
                 <Truck size={20} />
@@ -323,7 +319,6 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Related Products */}
         {relatedProducts.length > 0 && (
           <div className="related-products-section">
             <h2 className="related-title">You might also like</h2>

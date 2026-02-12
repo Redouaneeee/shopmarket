@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useCart } from './CartContext'
+import { useCart } from './store/useAuth'
 import { orderAPI } from './api'
 import { X, ShoppingCart, Trash2, Plus, Minus } from 'lucide-react'
 import { toast } from 'react-toastify'
@@ -8,42 +8,40 @@ import './CartSidebar.css'
 
 const CartSidebar = () => {
   const { 
-    cart, 
-    cartOpen, 
-    setCartOpen, 
+    items, 
+    isOpen, 
+    closeCart,
     removeFromCart, 
     updateQuantity, 
     clearCart,
-    cartTotal 
+    total 
   } = useCart()
 
   const handlePlaceOrder = async () => {
-    if (cart.length === 0) {
+    if (items.length === 0) {
       toast.warning('Your cart is empty!')
       return
     }
 
     try {
-      // Prepare order data
       const orderData = {
-        items: cart.map(item => ({
+        items: items.map(item => ({
           id: item.id,
           title: item.title,
           price: item.price,
           quantity: item.quantity,
           images: item.images
         })),
-        total: cartTotal,
+        total: total,
         date: new Date().toISOString()
       }
 
-      // Submit order
       const response = await orderAPI.submitOrder(orderData)
       
       if (response.success) {
         toast.success('🎉 Order placed successfully!')
         clearCart()
-        setCartOpen(false)
+        closeCart()
       }
     } catch (error) {
       toast.error('Failed to place order')
@@ -53,14 +51,14 @@ const CartSidebar = () => {
 
   return (
     <AnimatePresence>
-      {cartOpen && (
+      {isOpen && (
         <>
           <motion.div
             className="cart-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setCartOpen(false)}
+            onClick={closeCart}
           />
           
           <motion.div
@@ -74,24 +72,24 @@ const CartSidebar = () => {
               <div className="cart-title">
                 <ShoppingCart size={24} />
                 <h2>Your Cart</h2>
-                <span className="cart-count">{cart.length}</span>
+                <span className="cart-count">{items.length}</span>
               </div>
               <button 
                 className="close-btn"
-                onClick={() => setCartOpen(false)}
+                onClick={closeCart}
               >
                 <X size={20} />
               </button>
             </div>
 
-            {cart.length === 0 ? (
+            {items.length === 0 ? (
               <div className="empty-cart">
                 <ShoppingCart size={64} className="empty-cart-icon" />
                 <h3>Your cart is empty</h3>
                 <p>Looks like you haven't added anything yet</p>
                 <button 
                   className="continue-shopping"
-                  onClick={() => setCartOpen(false)}
+                  onClick={closeCart}
                 >
                   Continue Shopping
                 </button>
@@ -99,7 +97,7 @@ const CartSidebar = () => {
             ) : (
               <>
                 <div className="cart-items">
-                  {cart.map((item) => (
+                  {items.map((item) => (
                     <motion.div
                       key={item.id}
                       className="cart-item"
@@ -108,7 +106,7 @@ const CartSidebar = () => {
                       exit={{ opacity: 0, x: -20 }}
                     >
                       <img 
-                        src={item.images[0]} 
+                        src={item.images?.[0] || item.images} 
                         alt={item.title}
                         className="cart-item-image"
                         onError={(e) => {
@@ -118,7 +116,7 @@ const CartSidebar = () => {
                       
                       <div className="cart-item-details">
                         <h4 className="cart-item-title">{item.title}</h4>
-                        <p className="cart-item-price">${item.price.toFixed(2)}</p>
+                        <p className="cart-item-price">${item.price?.toFixed(2)}</p>
                         
                         <div className="cart-item-actions">
                           <div className="quantity-controls">
@@ -138,7 +136,7 @@ const CartSidebar = () => {
                           </div>
                           
                           <button
-                            onClick={() => removeFromCart(item.id, item.title)}
+                            onClick={() => removeFromCart(item.id)}
                             className="remove-btn"
                           >
                             <Trash2 size={16} />
@@ -153,7 +151,7 @@ const CartSidebar = () => {
                   <div className="cart-summary">
                     <div className="summary-row">
                       <span>Subtotal</span>
-                      <span>${cartTotal.toFixed(2)}</span>
+                      <span>${total.toFixed(2)}</span>
                     </div>
                     <div className="summary-row">
                       <span>Shipping</span>
@@ -161,7 +159,7 @@ const CartSidebar = () => {
                     </div>
                     <div className="summary-row total">
                       <span>Total</span>
-                      <span>${cartTotal.toFixed(2)}</span>
+                      <span>${total.toFixed(2)}</span>
                     </div>
                   </div>
 

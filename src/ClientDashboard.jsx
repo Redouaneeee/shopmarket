@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from './AuthContext'
-import { useCart } from './CartContext'
-import { useWishlist } from './WishlistContext'
+import { useAuth, useCart, useWishlist } from './store/useAuth'
 import { productAPI } from './api'
 import Navbar from './Navbar'
 import ProductCard from './ProductCard'
 import CartSidebar from './CartSidebar'
-import WishlistSidebar from './WishlistSidebar' // ✅ NEW: Import wishlist sidebar
+import WishlistSidebar from './WishlistSidebar'
 import AnimatedBackground from './AnimatedBackground'
 import { 
   Search, 
@@ -32,7 +30,7 @@ import {
   Tag,
   Star as StarIcon,
   Zap,
-  Percent
+  LogIn
 } from 'lucide-react'
 import { toast } from 'react-toastify'
 import './ClientDashboard.css'
@@ -66,12 +64,20 @@ const ClientDashboard = () => {
   const [itemsToShow, setItemsToShow] = useState(12)
   const [activeFilters, setActiveFilters] = useState([])
   
-  // Context hooks
-  const { user, logout } = useAuth()
-  const { cartCount, setCartOpen } = useCart()
-  const { wishlist, setWishlistOpen } = useWishlist() // ✅ ADDED: setWishlistOpen
+  // Auth state - handle gracefully when not logged in
+  const { isAuthenticated, login, logout } = useAuth()
+  const { 
+    cartCount, 
+    setCartOpen, 
+    addToCart 
+  } = useCart()
+  const { 
+    wishlist, 
+    setWishlistOpen, 
+    toggleWishlistItem 
+  } = useWishlist()
 
-  // Initial fetch
+  // Initial fetch - NO AUTH REQUIRED
   useEffect(() => {
     fetchProducts()
   }, [])
@@ -119,7 +125,7 @@ const ClientDashboard = () => {
     sortBy
   ])
 
-  // Fetch all products from API
+  // Fetch all products from API - PUBLIC
   const fetchProducts = async () => {
     try {
       setLoading(true)
@@ -130,7 +136,7 @@ const ClientDashboard = () => {
       const uniqueCategories = ['all', ...new Set(response.data.map(p => p.category.name))]
       setCategories(uniqueCategories)
       
-      // Extract unique brands (simulated from titles)
+      // Extract unique brands
       const uniqueBrands = ['all', ...new Set(
         response.data
           .map(p => p.title.split(' ')[0])
@@ -139,7 +145,7 @@ const ClientDashboard = () => {
       )]
       setBrands(uniqueBrands)
       
-      // Set featured products (random selection)
+      // Set featured products
       const shuffled = [...response.data].sort(() => 0.5 - Math.random())
       setFeaturedProducts(shuffled.slice(0, 4))
     } catch (error) {
@@ -150,11 +156,10 @@ const ClientDashboard = () => {
     }
   }
 
-  // Enhanced filter and sort products
+  // Filter and sort products - PUBLIC
   const filterAndSortProducts = () => {
     let filtered = [...products]
     
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(product =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -163,19 +168,16 @@ const ClientDashboard = () => {
       )
     }
     
-    // Apply category filter
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(product =>
         product.category.name === selectedCategory
       )
     }
     
-    // Apply price filter
     filtered = filtered.filter(product =>
       product.price >= priceRange[0] && product.price <= priceRange[1]
     )
     
-    // Apply rating filter (simulated)
     if (selectedRating > 0) {
       filtered = filtered.filter(() => {
         const randomRating = Math.random() * 2 + 3
@@ -183,24 +185,20 @@ const ClientDashboard = () => {
       })
     }
     
-    // Apply brand filter (simulated from title)
     if (selectedBrand !== 'all') {
       filtered = filtered.filter(product =>
         product.title.toLowerCase().includes(selectedBrand.toLowerCase())
       )
     }
     
-    // Apply stock filter (simulated)
     if (inStockOnly) {
       filtered = filtered.filter(() => Math.random() > 0.3)
     }
     
-    // Apply sale filter (simulated)
     if (onSaleOnly) {
       filtered = filtered.filter(() => Math.random() > 0.5)
     }
     
-    // Apply sorting
     switch(sortBy) {
       case 'price-asc':
         filtered.sort((a, b) => a.price - b.price)
@@ -228,12 +226,61 @@ const ClientDashboard = () => {
     setItemsToShow(12)
   }
 
-  // ✅ FIXED: Open wishlist sidebar instead of navigating
-  const handleWishlistClick = () => {
-    setWishlistOpen(true) // Open wishlist sidebar
+  // 🛒 Handle add to cart - ONLY require login when trying to buy
+  const handleAddToCart = (product) => {
+    if (!isAuthenticated) {
+      // Save the product they wanted to buy
+      localStorage.setItem('pendingCartItem', JSON.stringify({
+        product,
+        quantity: 1
+      }))
+      
+      toast.info('Please login to add items to cart')
+      navigate('/login')
+      return
+    }
+    
+    // Authenticated - add to cart normally
+    addToCart({ ...product, quantity: 1 })
+    toast.success(`🛒 Added ${product.title} to cart!`)
   }
 
-  // Navigate to home and reset filters
+  // 💖 Handle wishlist - require login to save favorites
+  const handleWishlistToggle = (product) => {
+    if (!isAuthenticated) {
+      localStorage.setItem('pendingWishlistItem', JSON.stringify({
+        product
+      }))
+      
+      toast.info('Please login to save items to wishlist')
+      navigate('/login')
+      return
+    }
+    
+    toggleWishlistItem(product)
+  }
+
+  // 🛍️ Handle view cart - require login to see cart
+  const handleViewCart = () => {
+    if (!isAuthenticated) {
+      toast.info('Please login to view your cart')
+      navigate('/login')
+      return
+    }
+    setCartOpen(true)
+  }
+
+  // 💝 Handle view wishlist - require login to see wishlist
+  const handleViewWishlist = () => {
+    if (!isAuthenticated) {
+      toast.info('Please login to view your wishlist')
+      navigate('/login')
+      return
+    }
+    setWishlistOpen(true)
+  }
+
+  // 🏠 Handle home click - PUBLIC, no login required
   const handleHomeClick = () => {
     setSearchTerm('')
     setSelectedCategory('all')
@@ -244,7 +291,7 @@ const ClientDashboard = () => {
     setOnSaleOnly(false)
     setSortBy('default')
     setShowFilters(false)
-    toast.info('Showing all products')
+    // Stay on home page, don't navigate
   }
 
   // Handle View All button click
@@ -340,19 +387,19 @@ const ClientDashboard = () => {
     <div className="client-dashboard">
       <AnimatedBackground />
       
-      {/* Navigation Bar - FIXED with wishlist sidebar trigger */}
+      {/* Navigation Bar - PUBLIC */}
       <Navbar
-        userRole="client"
+        isAuthenticated={isAuthenticated}
         onLogout={logout}
         cartCount={cartCount}
-        wishlistCount={wishlist.length}
-        onCartClick={() => setCartOpen(true)}
-        onWishlistClick={handleWishlistClick} // ✅ Now opens sidebar instead of navigating
+        wishlistCount={wishlist?.length || 0}
+        onCartClick={handleViewCart}
+        onWishlistClick={handleViewWishlist}
         onHomeClick={handleHomeClick}
       />
 
       <div className="dashboard-content">
-        {/* Hero Section */}
+        {/* Hero Section - PUBLIC */}
         <section className="hero-section">
           <motion.div
             className="hero-content"
@@ -371,13 +418,13 @@ const ClientDashboard = () => {
             </motion.div>
             
             <h1 className="hero-title">
-              Discover Your
-              <span className="gradient-text"> Perfect Style</span>
+              Welcome to
+              <span className="gradient-text"> ShopMarket</span>
             </h1>
             
             <p className="hero-subtitle">
-              Shop the latest trends with exclusive deals, free shipping, 
-              and 30-day money-back guarantee
+              Discover thousands of products at amazing prices. 
+              No account needed to browse - just start shopping!
             </p>
             
             <div className="hero-stats">
@@ -394,10 +441,27 @@ const ClientDashboard = () => {
                 <span className="stat-label">Support</span>
               </div>
             </div>
+
+            {/* Call to action for guests */}
+            {!isAuthenticated && (
+              <motion.button
+                className="login-cta-btn"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/login')}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <LogIn size={18} />
+                Sign In for Exclusive Benefits
+                <ArrowRight size={16} />
+              </motion.button>
+            )}
           </motion.div>
         </section>
 
-        {/* Featured Products Section */}
+        {/* Featured Products Section - PUBLIC */}
         <section className="featured-section">
           <div className="section-header">
             <div className="section-title-wrapper">
@@ -423,7 +487,12 @@ const ClientDashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <ProductCard product={product} />
+                <ProductCard 
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onWishlistToggle={handleWishlistToggle}
+                  isAuthenticated={isAuthenticated}
+                />
               </motion.div>
             ))}
           </div>
@@ -497,10 +566,9 @@ const ClientDashboard = () => {
           </div>
         )}
 
-        {/* Search and Filters Section */}
+        {/* Search and Filters Section - PUBLIC */}
         <section className="filters-section">
           <div className="filters-header">
-            {/* Search Input */}
             <div className="search-wrapper">
               <Search className="search-icon" size={20} />
               <input
@@ -524,7 +592,6 @@ const ClientDashboard = () => {
             </div>
 
             <div className="filters-actions">
-              {/* Filter Toggle Button */}
               <motion.button 
                 className={`filter-toggle ${showFilters ? 'active' : ''}`}
                 onClick={() => setShowFilters(!showFilters)}
@@ -539,7 +606,6 @@ const ClientDashboard = () => {
                 {showFilters && <ChevronDown size={16} className="rotate" />}
               </motion.button>
 
-              {/* Sort Dropdown */}
               <div className="sort-wrapper">
                 <select 
                   value={sortBy}
@@ -556,7 +622,6 @@ const ClientDashboard = () => {
                 </select>
               </div>
 
-              {/* View Mode Toggle */}
               <div className="view-toggle">
                 <motion.button
                   className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -578,7 +643,6 @@ const ClientDashboard = () => {
                 </motion.button>
               </div>
 
-              {/* Mobile Filter Button */}
               <motion.button 
                 className="mobile-filter-btn"
                 onClick={() => setShowMobileFilters(true)}
@@ -594,7 +658,7 @@ const ClientDashboard = () => {
             </div>
           </div>
 
-          {/* Enhanced Filters Panel (Desktop) */}
+          {/* Filters Panel - PUBLIC */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -605,7 +669,6 @@ const ClientDashboard = () => {
                 transition={{ duration: 0.3 }}
               >
                 <div className="filters-grid">
-                  {/* Category Filter */}
                   <div className="filter-group">
                     <label className="filter-label">
                       <Tag size={14} />
@@ -629,7 +692,6 @@ const ClientDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Price Range Filter */}
                   <div className="filter-group">
                     <label className="filter-label">
                       <DollarSign size={14} />
@@ -685,7 +747,6 @@ const ClientDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Rating Filter */}
                   <div className="filter-group">
                     <label className="filter-label">
                       <StarIcon size={14} />
@@ -716,7 +777,6 @@ const ClientDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Brand Filter */}
                   <div className="filter-group">
                     <label className="filter-label">
                       <ShoppingBag size={14} />
@@ -735,7 +795,6 @@ const ClientDashboard = () => {
                     </select>
                   </div>
 
-                  {/* Availability Filters */}
                   <div className="filter-group">
                     <label className="filter-label">
                       <Zap size={14} />
@@ -761,7 +820,6 @@ const ClientDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Filter Actions */}
                   <div className="filter-actions">
                     <motion.button 
                       onClick={clearFilters}
@@ -786,7 +844,7 @@ const ClientDashboard = () => {
           </AnimatePresence>
         </section>
 
-        {/* Products Grid Section */}
+        {/* Products Grid Section - PUBLIC */}
         <section className="products-section">
           <div className="products-header">
             <div className="results-info">
@@ -811,7 +869,6 @@ const ClientDashboard = () => {
             )}
           </div>
 
-          {/* No Products Found */}
           {filteredProducts.length === 0 ? (
             <motion.div
               className="no-products"
@@ -842,7 +899,6 @@ const ClientDashboard = () => {
             </motion.div>
           ) : (
             <>
-              {/* Products Grid */}
               <div className={`products-grid ${viewMode}`}>
                 <AnimatePresence>
                   {displayedProducts.map((product, index) => (
@@ -858,13 +914,17 @@ const ClientDashboard = () => {
                       }}
                       layout
                     >
-                      <ProductCard product={product} />
+                      <ProductCard 
+                        product={product}
+                        onAddToCart={handleAddToCart}
+                        onWishlistToggle={handleWishlistToggle}
+                        isAuthenticated={isAuthenticated}
+                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>
               </div>
 
-              {/* Load More Button */}
               {displayedProducts.length < filteredProducts.length && (
                 <motion.div 
                   className="load-more"
@@ -884,7 +944,7 @@ const ClientDashboard = () => {
           )}
         </section>
 
-        {/* Benefits/Trust Section */}
+        {/* Benefits Section - PUBLIC */}
         <section className="benefits-section">
           <h2 className="benefits-title">Why Shop With Us?</h2>
           <div className="benefits-grid">
@@ -947,7 +1007,7 @@ const ClientDashboard = () => {
         </section>
       </div>
 
-      {/* Enhanced Mobile Filters Modal */}
+      {/* Mobile Filters Modal - PUBLIC */}
       <AnimatePresence>
         {showMobileFilters && (
           <motion.div 
@@ -976,7 +1036,6 @@ const ClientDashboard = () => {
               </div>
               
               <div className="mobile-filters-body">
-                {/* Category Filter */}
                 <div className="mobile-filter-group">
                   <label>Category</label>
                   <select 
@@ -991,7 +1050,6 @@ const ClientDashboard = () => {
                   </select>
                 </div>
 
-                {/* Price Range Filter */}
                 <div className="mobile-filter-group">
                   <label>Price Range</label>
                   <div className="mobile-price-range">
@@ -1024,7 +1082,6 @@ const ClientDashboard = () => {
                   </div>
                 </div>
 
-                {/* Rating Filter */}
                 <div className="mobile-filter-group">
                   <label>Minimum Rating</label>
                   <select 
@@ -1039,7 +1096,6 @@ const ClientDashboard = () => {
                   </select>
                 </div>
 
-                {/* Brand Filter */}
                 <div className="mobile-filter-group">
                   <label>Brand</label>
                   <select 
@@ -1054,7 +1110,6 @@ const ClientDashboard = () => {
                   </select>
                 </div>
 
-                {/* Availability Filters */}
                 <div className="mobile-filter-group">
                   <label>Availability</label>
                   <div className="mobile-checkbox-group">
@@ -1077,7 +1132,6 @@ const ClientDashboard = () => {
                   </div>
                 </div>
 
-                {/* Sort Option */}
                 <div className="mobile-filter-group">
                   <label>Sort By</label>
                   <select 
@@ -1111,11 +1165,11 @@ const ClientDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* Shopping Cart Sidebar */}
-      <CartSidebar />
+      {/* Cart Sidebar - Only show if authenticated */}
+      {isAuthenticated && <CartSidebar />}
       
-      {/* ✅ NEW: Wishlist Sidebar */}
-      <WishlistSidebar />
+      {/* Wishlist Sidebar - Only show if authenticated */}
+      {isAuthenticated && <WishlistSidebar />}
     </div>
   )
 }

@@ -11,12 +11,14 @@ import {
   X,
   Home,
   Settings,
-  Package
+  Package,
+  LogIn
 } from 'lucide-react'
 import './Navbar.css'
 
 const Navbar = ({
   userRole,
+  isAuthenticated,
   onLogout,
   cartCount = 0,
   wishlistCount = 0,
@@ -24,12 +26,14 @@ const Navbar = ({
   onWishlistClick,
   onHomeClick,
   showBackButton,
-  onBack
+  onBack,
+  isPublicStore
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const navigate = useNavigate()
 
-  const menuItems = userRole === 'admin' ? [
+  // Menu items for authenticated users
+  const authMenuItems = userRole === 'admin' ? [
     { icon: Home, label: 'Dashboard', onClick: () => navigate('/admin') },
     { icon: Package, label: 'Products', onClick: () => navigate('/admin') },
     { icon: ShoppingCart, label: 'Orders', onClick: () => navigate('/admin') },
@@ -39,6 +43,15 @@ const Navbar = ({
     { icon: Heart, label: 'Wishlist', onClick: onWishlistClick, badge: wishlistCount },
     { icon: ShoppingCart, label: 'Cart', onClick: onCartClick, badge: cartCount }
   ]
+
+  // Menu items for guests
+  const guestMenuItems = [
+    { icon: Home, label: 'Home', onClick: onHomeClick || (() => navigate('/store')), badge: null },
+    { icon: LogIn, label: 'Sign In', onClick: () => navigate('/login'), badge: null },
+    { icon: ShoppingCart, label: 'Cart', onClick: onCartClick, badge: cartCount }
+  ]
+
+  const menuItems = isAuthenticated ? authMenuItems : guestMenuItems
 
   const handleLogout = () => {
     onLogout()
@@ -65,7 +78,10 @@ const Navbar = ({
             </motion.button>
           )}
 
-          <Link to={userRole === 'admin' ? '/admin' : '/client'} className="logo">
+          <Link 
+            to={isAuthenticated && userRole === 'admin' ? '/admin' : isAuthenticated ? '/client' : '/store'} 
+            className="logo"
+          >
             <ShoppingBag className="logo-icon" />
             <span className="logo-text">ShopMarket</span>
           </Link>
@@ -97,21 +113,35 @@ const Navbar = ({
           <div className="nav-divider" />
 
           <div className="user-menu">
-            <div className="user-info">
-              <User size={18} />
-              <span className="user-role">
-                {userRole === 'admin' ? 'Admin' : 'Client'}
-              </span>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleLogout}
-              className="logout-btn"
-            >
-              <LogOut size={18} />
-              <span>Logout</span>
-            </motion.button>
+            {isAuthenticated ? (
+              <>
+                <div className="user-info">
+                  <User size={18} />
+                  <span className="user-role">
+                    {userRole === 'admin' ? 'Admin' : 'Client'}
+                  </span>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleLogout}
+                  className="logout-btn"
+                >
+                  <LogOut size={18} />
+                  <span>Logout</span>
+                </motion.button>
+              </>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/login')}
+                className="login-btn-nav"
+              >
+                <LogIn size={18} />
+                <span>Sign In</span>
+              </motion.button>
+            )}
           </div>
         </div>
 
@@ -151,13 +181,26 @@ const Navbar = ({
                 )}
               </button>
             ))}
-            <button
-              onClick={handleLogout}
-              className="mobile-nav-link logout"
-            >
-              <LogOut size={20} />
-              <span>Logout</span>
-            </button>
+            {isAuthenticated ? (
+              <button
+                onClick={handleLogout}
+                className="mobile-nav-link logout"
+              >
+                <LogOut size={20} />
+                <span>Logout</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  navigate('/login')
+                  setIsMenuOpen(false)
+                }}
+                className="mobile-nav-link"
+              >
+                <LogIn size={20} />
+                <span>Sign In</span>
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

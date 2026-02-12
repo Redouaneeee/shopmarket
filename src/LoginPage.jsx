@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from './AuthContext'
+import { motion } from 'framer-motion'
+import { useAuth } from './store/useAuth'
 import { ShoppingBag, User, Lock, Eye, EyeOff, Sparkles, ArrowRight } from 'lucide-react'
 import './LoginPage.css'
 
@@ -9,34 +9,38 @@ const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  
+  const { login, isLoading, error, clearError } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.key === 'Enter' && !isLoading) {
-        handleSubmit(e)
-      }
-    }
-    window.addEventListener('keypress', handleKeyPress)
-    return () => window.removeEventListener('keypress', handleKeyPress)
-  }, [email, password, isLoading])
+    clearError()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || !password) return
     
-    setIsLoading(true)
-    setTimeout(() => {
-      const role = login(email, password)
-      if (role === 'admin') {
-        navigate('/admin')
-      } else if (role === 'client') {
-        navigate('/client')
+    const role = await login(email, password)
+    
+    if (role) {
+     
+      const pendingCart = localStorage.getItem('pendingCartItem')
+      
+      if (pendingCart) {
+     
+        localStorage.removeItem('pendingCartItem')
+       
+        navigate('/')
+       
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
+      } else {
+        
+        navigate('/')
       }
-      setIsLoading(false)
-    }, 1000)
+    }
   }
 
   const demoLogin = (type) => {
@@ -118,6 +122,12 @@ const LoginPage = () => {
                 <div className="input-glow"></div>
               </div>
             </div>
+
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
 
             <motion.button
               whileHover={{ scale: 1.02 }}

@@ -57,6 +57,7 @@
   font-size: 1.2rem;
   font-weight: 700;
   background: linear-gradient(to right, #fff, var(--accent));
+  background-clip: text;
   -webkit-background-clip: text; /* ✅ Added this line */
   -webkit-text-fill-color: transparent;
 }
@@ -207,4 +208,22 @@
 
 .mobile-nav-link.logout {
   color: var(--danger);
+}/* Add to Navbar.css */
+.login-btn-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.login-btn-nav:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
 }
